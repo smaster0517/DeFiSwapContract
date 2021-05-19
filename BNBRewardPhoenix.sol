@@ -192,8 +192,6 @@ library SafeMath {
 
 // File: @pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol
 
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 pragma solidity >=0.4.0;
 
 interface IBEP20 {
@@ -292,8 +290,6 @@ interface IBEP20 {
 }
 
 // File: @pancakeswap/pancake-swap-lib/contracts/utils/Address.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.2;
 
@@ -457,8 +453,6 @@ library Address {
 
 // File: @pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity ^0.6.0;
 
 
@@ -560,8 +554,6 @@ library SafeBEP20 {
 
 // File: @pancakeswap/pancake-swap-lib/contracts/GSN/Context.sol
 
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 pragma solidity >=0.4.0;
 
 /*
@@ -591,7 +583,7 @@ contract Context {
 
 // File: @pancakeswap/pancake-swap-lib/contracts/access/Ownable.sol
 
-// SPDX-License-Identifier: GPL-3.0-or-later
+
 
 pragma solidity >=0.4.0;
 
@@ -668,8 +660,6 @@ contract Ownable is Context {
 }
 
 // File: contracts/BNBRewardPhoenix.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
 
@@ -748,11 +738,17 @@ contract BNBRewardPhoenix is Ownable {
         IBEP20 _stakeToken,
         uint256 _rewardPerBlock,
         uint256 _startBlock,
-        uint16 _depositFeeBP
+        uint16 _depositFeeBP,
+        address _devaddr,
+        address _feeAddress,
+        address _withdrawFeeAddress
     ) public {
         stakeToken = _stakeToken;
         rewardPerBlock = _rewardPerBlock;
         startBlock = _startBlock;
+        devaddr = _devaddr;
+        feeAddress = _feeAddress;
+        withdrawFeeAddress = _withdrawFeeAddress;
 
         // staking pool
         poolInfo.push(PoolInfo({
@@ -766,6 +762,8 @@ contract BNBRewardPhoenix is Ownable {
         totalAllocPoint = 1000;
 
     }
+
+    receive () external payable {}
 
     // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to) public pure returns (uint256) {
@@ -866,7 +864,6 @@ contract BNBRewardPhoenix is Ownable {
             }else{
                 user.amount = user.amount.add(_amount);
             }
-            user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(1e12);
         
@@ -986,25 +983,25 @@ contract BNBRewardPhoenix is Ownable {
         require(success, 'TransferHelper: BNB_TRANSFER_FAILED');
     }
 
-    // Safe PNIXS transfer function, just in case if rounding error causes pool to not have enough PNIXS.
-    function safeBNBTransfer(address _to, uint256 _amount) internal {
-        uint256 balance = payable(address(this)).balance;
-        if (_amount > balance) {
-            (bool success, ) = _to.call{gas: 23000, value: balance}("");
-            require(success, 'TransferHelper: BNB_TRANSFER_FAILED');
-        } else {
-            (bool success, ) = _to.call{gas: 23000, value: _amount}("");
-            require(success, 'TransferHelper: BNB_TRANSFER_FAILED');
-        }
-    }
+    // // Safe PNIXS transfer function, just in case if rounding error causes pool to not have enough PNIXS.
+    // function safeBNBTransfer(address _to, uint256 _amount) internal {
+    //     uint256 balance = payable(address(this)).balance;
+    //     if (_amount > balance) {
+    //         (bool success, ) = _to.call{gas: 23000, value: balance}("");
+    //         require(success, 'TransferHelper: BNB_TRANSFER_FAILED');
+    //     } else {
+    //         (bool success, ) = _to.call{gas: 23000, value: _amount}("");
+    //         require(success, 'TransferHelper: BNB_TRANSFER_FAILED');
+    //     }
+    // }
 
-    // Transfer Pnixs Token from MasterChef to _to Address
-    function transferBNB(address _to, uint256 _amount) public onlyOwner  {
+    // // Transfer Pnixs Token from MasterChef to _to Address
+    // function transferBNB(address _to, uint256 _amount) public onlyOwner  {
    
-        require(_to  != address(0), "transferToken: FORBIDDEN");
-        (bool success, ) = _to.call{gas: 23000, value: _amount}("");
-        require(success, 'TransferHelper: BNB_TRANSFER_FAILED');
-    }
+    //     require(_to  != address(0), "transferToken: FORBIDDEN");
+    //     (bool success, ) = _to.call{gas: 23000, value: _amount}("");
+    //     require(success, 'TransferHelper: BNB_TRANSFER_FAILED');
+    // }
 
     function registerRef(address _referrer) public{
         if (userRef[address(msg.sender)] == address(0) && _referrer != address(0) && _referrer != address(msg.sender)) {
@@ -1039,6 +1036,12 @@ contract BNBRewardPhoenix is Ownable {
     function updateWithdrawFee(uint16 _amount) public onlyOwner {
         require(_amount <= 30, "set: invalid withdrawFee fee basis points"); // max withdrawFee=30%
         withdrawFee = _amount;
+    }
+
+    // Update depositFeeBP
+    function updateDepositFeeBP(uint16 _amount) public onlyOwner {
+        require(_amount <= 30, "set: invalid depositFee fee basis points");
+        poolInfo[0].depositFeeBP = _amount;
     }
 
     // Update PercentForReferLv1, max PercentForReferLv1=30%.
