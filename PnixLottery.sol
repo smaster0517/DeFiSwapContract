@@ -383,7 +383,7 @@ contract Lottery is LotteryOwnable, Initializable {
     }
 
     // Set the minimum price for one ticket
-    function setMinPrice(uint256 _price) external onlyAdmin {
+    function setMinPrice(uint256 _price)  external onlyAdmin {
         minPrice = _price;
     }
 
